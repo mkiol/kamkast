@@ -13,7 +13,7 @@ Video:
 - v4l2 devices (e.g. USB web cams)
 - X11 screen capture
 - DroidCam (camera in Sailfish OS)
-- Lipstick screen capture (wayland compositor in Sailfish OS)
+- Lipstick screen capture (Wayland display server in Sailfish OS)
 
 Audio:
 
@@ -82,6 +82,11 @@ make
 
 - Binaries for `x86_64`, `arm`, `aarch64` as well as flatpak packages are in [Releases](https://github.com/mkiol/kamkast/releases). 
 - Sailfish OS packages are available on [OpenRepos](https://openrepos.net/content/mkiol/kamkast)
+
+## Plans for future development
+
+- Support for [libcamera](https://libcamera.org/)
+- Support for screen capture on more Wayland display servers (Kwin, Mutter) 
 
 ## License
 
