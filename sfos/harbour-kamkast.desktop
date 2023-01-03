@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=generic
+Icon=harbour-kamkast
+Exec=harbour-kamkast --gui
+Name=Kamkast
+
+[X-Sailjail]
+Sandboxing=Disabled

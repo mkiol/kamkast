@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head lang='en'>
+<title>kamkast</title>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<script>
+let streamUrl = null;
+function baseUrl() {
+    return location.protocol + '//' + location.host + '/' +
+        location.pathname.replace(/^[\/\s]+|[\/\s]+$/g, '');
+}
+function showMsg(text) {
+    const msg = document.getElementById('msg');
+    msg.hidden = false;
+    msg.innerHTML = text;
+}
+function hideMsg() {
+    const msg = document.getElementById('msg');
+    msg.hidden = true;
+}
+function init1() {
+    fetch(baseUrl() + '/ctrl/info')
+      .then((response) => response.json())
+      .then((json) => init2(json));
+}
+function init2(info) {
+    const app = document.getElementById('app');
+    const splash = document.getElementById('splash');
+    const header = document.getElementById('header');
+    const streamFormatSelect = document.getElementById('stream-format-select');
+    const videoSelect = document.getElementById('video-select');
+    const videoOrientationSelect = document.getElementById('video-orientation-select');
+    const audioSelect = document.getElementById('audio-select');
+    const audioVolumeInput = document.getElementById('audio-volume-input');
+    const playButton = document.getElementById('play-button');
+    const stopButton = document.getElementById('stop-button');
+    const video = document.getElementById('video');
+
+    const disabledDev = {name: 'off', friendly_name: 'Don\'t use'};
+    info.video_sources.push(disabledDev);
+    info.audio_sources.push(disabledDev);
+
+    info.video_sources.forEach(
+        videoSource => videoSelect.options.add(new Option(videoSource.friendly_name + ' (' + videoSource.name + ')', videoSource.name)));
+    info.audio_sources.forEach(
+        audioSource => audioSelect.options.add(new Option(audioSource.friendly_name + ' (' + audioSource.name + ')', audioSource.name)));
+
+    streamFormatSelect.value = info.default_stream_format;
+    videoSelect.value = info.default_video_source ? info.default_video_source : 'off';
+    videoOrientationSelect.value = info.default_video_orientation;
+    audioSelect.value = info.default_audio_source ? info.default_audio_source : 'off';
+    audioVolumeInput.value = info.default_audio_volume;
+    header.innerHTML = info.server_name + ' (version: ' + info.server_version + ')';
+
+    streamFormatSelect.addEventListener('change', () => update());
+    videoSelect.addEventListener('change', () => update());
+    videoOrientationSelect.addEventListener('change', () => update());
+    audioSelect.addEventListener('change', () => update());
+    audioVolumeInput.addEventListener('change', () => update());
+    playButton.addEventListener('click', () => play());
+    stopButton.addEventListener('click', () => stop());
+    video.addEventListener('pause', () => stop());
+    update();
+
+    splash.hidden = true;
+    app.hidden = false;
+}
+function streamUrlOk() {
+    const videoSelect = document.getElementById('video-select');
+    const audioSelect = document.getElementById('audio-select');
+    return videoSelect.value != 'off' || audioSelect.value != 'off';
+}
+function canPreview() {
+    const streamFormatSelect = document.getElementById('stream-format-select');
+    return streamUrlOk() && streamFormatSelect.value != 'mpegts';
+}
+function setStreamUrl() {
+    const url = document.getElementById('url');
+    const streamFormatSelect = document.getElementById('stream-format-select');
+    const videoSelect = document.getElementById('video-select');
+    const videoOrientationSelect = document.getElementById('video-orientation-select');
+    const audioSelect = document.getElementById('audio-select');
+    const audioVolumeInput = document.getElementById('audio-volume-input');
+
+    streamUrl = baseUrl() + '/stream' +
+        '?stream-format=' + streamFormatSelect.value +
+        '&video-source=' + videoSelect.value +
+        '&video-orientation=' + videoOrientationSelect.value +
+        '&audio-source=' + audioSelect.value +
+        '&audio-volume=' + audioVolumeInput.value;
+
+    url.innerHTML = streamUrl;
+    url.href = streamUrl;
+}
+function update() {
+    const audioVolumeVal = document.getElementById('audioVolumeVal');
+    const playButton = document.getElementById('play-button');
+    const stopButton = document.getElementById('stop-button');
+    const audioVolumeInput = document.getElementById('audio-volume-input');
+
+    setStreamUrl();
+
+    audioVolumeVal.innerHTML = audioVolumeInput.value;
+
+    if (streamUrlOk()) hideMsg();
+    else showMsg('Select video or/and audio source.');
+
+    if (canPreview()) {
+        playButton.disabled = false;
+        stopButton.disabled = false;
+    } else {
+        playButton.disabled = true;
+        stopButton.disabled = true;
+    }
+}
+function play() {
+    const video = document.getElementById('video');
+    video.hidden = false;
+    video.src = streamUrl;
+    video.play();
+}
+function stop() {
+    const video = document.getElementById('video');
+    video.hidden = true;
+    video.src = '';
+    video.load();
+}
+</script>
+<style>
+#header { margin: 10px 5px 15px 5px; }
+#msg { padding: 5px; color: #d00; border: 1px solid #d00; background-color: #fdd; }
+button { margin: 5px 0 5px 0; color: #000; background-color: #fff; }
+button:disabled { color: #666; border-color: #666; }
+button:hover:enabled { color: #000; background-color: #ccc; }
+button, input, fieldset { border: 1px solid #000; }
+video { width: clamp(50px, 100%, 400px); height: auto; }
+label { display: inline-block; text-align: right;}
+fieldset { margin: 10px 0 10px 0; }
+.input * { vertical-align: bottom; }
+.input { padding: 5px 0 5px 0; }
+</style>
+</head>
+<body onload='init1()'>
+<div id='splash'>initializing...</div>
+<div id='app' hidden>
+<div id='header'></div>
+<div id='msg' hidden></div>
+<fieldset>
+<legend>Stream configuration</legend>
+
+<div class='input'>
+<label for='stream-format-select'>Format:</label>
+<select name='stream-format' id='stream-format-select'>
+    <option value='mp4'>MP4</option>
+    <option value='mpegts'>MPEG-TS</option>
+    <option value='mp3'>MP3</option>
+</select>
+</div>
+
+<div class='input'>
+<label for='video-select'>Video source:</label>
+<select name='video-source' id='video-select'>
+</select>
+</div>
+
+<div class='input'>
+<label for='audio-select'>Audio source:</label>
+<select name='audio-source' id='audio-select'>
+</select>
+</div>
+
+<div class='input'>
+<label for='video-orientation-select'>Video orientation:</label>
+<select name='video-orientation' id='video-orientation-select'>
+    <option value='auto'>Auto</option>
+    <option value='landscape'>Landscape</option>
+    <option value='inverted-landscape'>Inverted landscape</option>
+    <option value='portrait'>Portrait</option>
+    <option value='inverted-portrait'>Inverted portrait</option>
+</select>
+</div>
+
+<div class='input'>
+<label for='audio-volume-input'>Audio volume:</label>
+<input type='range' name='audio-volume' id='audio-volume-input' min='0' max='10'
+       step='0.1' oninput='audioVolumeVal.innerText = this.value'>
+<span id='audioVolumeVal'></span>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>Stream URL</legend>
+<a id='url'></a>
+<div class='input'>
+<button id='play-button'>Preview stream in browser</button>
+<button id='stop-button'>Stop stream</button></div>
+<div><video id='video' preload='none' controls hidden></div>
+</div>
+</fieldset>
+
+</body>
+</html>
