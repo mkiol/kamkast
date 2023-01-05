@@ -8,6 +8,8 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
+#include <fstream>
+#include <optional>
 #include <sstream>
 
 #ifdef USE_TRACE_LOGS
@@ -25,10 +27,6 @@
         << msg
 #define LOGE(msg) \
     Logger::Message(Logger::LogType::Error, __FILE__, __func__, __LINE__) << msg
-#define LOGE_NOENDL(msg)                                                  \
-    Logger::Message(Logger::LogType::Error, __FILE__, __func__, __LINE__, \
-                    false)                                                \
-        << msg
 
 class Logger {
    public:
@@ -37,7 +35,8 @@ class Logger {
         Debug = 1,
         Info = 2,
         Warning = 3,
-        Error = 4
+        Error = 4,
+        Quiet = 5
     };
     friend std::ostream &operator<<(std::ostream &os, LogType type);
 
@@ -47,11 +46,9 @@ class Logger {
         const char *m_file;
         const char *m_fun;
         int m_line;
-        bool m_endl;
 
        public:
-        Message(LogType type, const char *file, const char *function, int line,
-                bool endl = true);
+        Message(LogType type, const char *file, const char *function, int line);
         ~Message();
 
         template <typename T>
@@ -61,6 +58,7 @@ class Logger {
         }
     };
 
+    static void init(LogType level, const std::string &file = {});
     static void setLevel(LogType level);
     static LogType level();
     static bool match(LogType type);
@@ -68,6 +66,7 @@ class Logger {
 
    private:
     static LogType m_level;
+    static std::optional<std::ofstream> m_file;
 };
 
 #endif  // LOGGER_H

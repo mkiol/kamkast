@@ -15,6 +15,7 @@
 #include <cstdio>
 
 Logger::LogType Logger::m_level = Logger::LogType::Error;
+std::optional<std::ofstream> Logger::m_file = std::nullopt;
 
 std::ostream &operator<<(std::ostream &os, Logger::LogType type) {
     switch (type) {
@@ -33,8 +34,23 @@ std::ostream &operator<<(std::ostream &os, Logger::LogType type) {
         case Logger::LogType::Error:
             os << "error";
             break;
+        case Logger::LogType::Quiet:
+            os << "quiet";
+            break;
     }
     return os;
+}
+
+void Logger::init(LogType level, const std::string &file) {
+    m_level = level;
+
+    if (!file.empty()) {
+        m_file.emplace(file, std::ios::trunc);
+        if (!m_file->good()) {
+            m_file.reset();
+            LOGW("failed to create log file: " << file);
+        }
+    }
 }
 
 void Logger::setLevel(LogType level) {
@@ -52,8 +68,8 @@ bool Logger::match(LogType type) {
 }
 
 Logger::Message::Message(LogType type, const char *file, const char *function,
-                         int line, bool endl)
-    : m_type{type}, m_file{file}, m_fun{function}, m_line{line}, m_endl{endl} {}
+                         int line)
+    : m_type{type}, m_file{file}, m_fun{function}, m_line{line} {}
 
 inline static auto typeToChar(Logger::LogType type) {
     switch (type) {
@@ -67,6 +83,8 @@ inline static auto typeToChar(Logger::LogType type) {
             return 'W';
         case Logger::LogType::Error:
             return 'E';
+        case Logger::LogType::Quiet:
+            return 'Q';
     }
     return '-';
 }
@@ -80,15 +98,23 @@ Logger::Message::~Message() {
                      .count() %
                  1000;
 
+    auto str = m_os.str();
+    if (str.empty()) return;
+
+    auto fmt =
+        fmt::format("[{{0}}] {{1:%H:%M:%S}}.{{2}} {{3:#10x}} {{4}}{} - {{5}}{}",
+                    m_line > 0 ? ":{6}" : "", str.back() == '\n' ? "" : "\n");
     try {
-        fmt::print(stderr,
-                   m_endl ? "[{}] {:%H:%M:%S}.{} {:#10x} {}:{} - {}\n"
-                          : "[{}] {:%H:%M:%S}.{} {:#10x} {}:{} - {}",
-                   typeToChar(m_type), now, msecs, thrd_current(), m_fun,
-                   m_line, m_os.str().c_str());
+        auto line = fmt::format(fmt, typeToChar(m_type), now, msecs,
+                                thrd_current(), m_fun, str.c_str(), m_line);
+        if (Logger::m_file) {
+            *Logger::m_file << line;
+            Logger::m_file->flush();
+        } else {
+            fmt::print(stderr, line);
+            fflush(stderr);
+        }
     } catch (const std::runtime_error &e) {
         fmt::print(stderr, "logger error: {}\n", e.what());
     }
-
-    fflush(stderr);
 }

@@ -91,14 +91,17 @@ set(sources
     src/noguieventloop.cpp
     src/settings.cpp
     src/logger.cpp
+    src/avlogger.cpp
     src/caster.cpp
     src/httpserver.cpp
     src/fftools.cpp
-    src/testsource.cpp
-)
+    src/testsource.cpp)
+
 if(with_sfos)
     set(CMAKE_AUTOMOC ON)
-    list(APPEND sources src/sfosgui.cpp)
+    list(APPEND sources
+        src/qtlogger.cpp
+        src/sfosgui.cpp)
     if(with_sfos_screen_capture)
         list(APPEND sources
             src/lipstickrecordersource.cpp

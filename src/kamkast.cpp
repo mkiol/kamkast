@@ -26,6 +26,7 @@ using namespace std::literals;
 Kamkast::Kamkast(Settings&& settings, [[maybe_unused]] int argc,
                  [[maybe_unused]] char** argv)
     : m_settings{settings} {
+    LOGI("kamkast staring, version " << APP_VERSION);
 #ifdef USE_SFOS
     if (m_settings.gui)
         m_loop.emplace(

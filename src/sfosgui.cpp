@@ -11,7 +11,6 @@
 
 #include <QDir>
 #include <QGuiApplication>
-#include <QMessageLogContext>
 #include <QQmlContext>
 #include <QStandardPaths>
 #include <QString>
@@ -21,28 +20,7 @@
 #include "config.h"
 #include "httpserver.hpp"
 #include "logger.hpp"
-
-static void qtLog(QtMsgType qtType, const QMessageLogContext &qtContext,
-                  const QString &qtMsg) {
-    Logger::Message msg{[qtType] {
-                            switch (qtType) {
-                                case QtDebugMsg:
-                                    return Logger::LogType::Debug;
-                                case QtInfoMsg:
-                                    return Logger::LogType::Info;
-                                case QtWarningMsg:
-                                    return Logger::LogType::Warning;
-                                case QtCriticalMsg:
-                                case QtFatalMsg:
-                                    return Logger::LogType::Error;
-                            }
-                            return Logger::LogType::Debug;
-                        }(),
-                        qtContext.file ? qtContext.file : "",
-                        qtContext.function ? qtContext.function : "",
-                        qtContext.line};
-    msg << qtMsg.toStdString();
-}
+#include "qtlogger.hpp"
 
 SfosGui::SfosGui(int argc, char **argv, Event::Handler eventHandler,
                  Settings &settings)
@@ -51,7 +29,8 @@ SfosGui::SfosGui(int argc, char **argv, Event::Handler eventHandler,
       m_videoSources{Caster::videoSources()},
       m_audioSources{Caster::audioSources()},
       m_ifnames{makeIfnames()} {
-    qInstallMessageHandler(qtLog);
+    initQtLogger();
+
     qRegisterMetaType<Event::Pack>("Event::Pack");
 
     connect(

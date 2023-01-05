@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 #include <signal.h>
 
+#include "avlogger.hpp"
 #include "kamkast.hpp"
 #include "logger.hpp"
 #include "options.hpp"
@@ -59,7 +60,14 @@ int main(int argc, char** argv) {
         auto settings = processOpts(argc, argv);
         if (!settings) return 0;
 
-        if (settings->debug) Logger::setLevel(Logger::LogType::Trace);
+#ifdef USE_TRACE_LOGS
+        if (settings->debug)
+            Logger::init(Logger::LogType::Trace, settings->debugFile);
+#else
+        if (settings->debug)
+            Logger::init(Logger::LogType::Debug, settings->debugFile);
+#endif
+        initAvLogger();
 
         Kamkast kamkast{std::move(*settings), argc, argv};
 

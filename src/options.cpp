@@ -54,6 +54,8 @@ Options::Options(int argc, char** argv) : m_options{APP_NAME, APP_DESC} {
             cxxopts::value<std::string>()->default_value(""))
         ("d,"s + Settings::debugOpt, "Enable debugging logs (stderr)",
             cxxopts::value<bool>()->default_value("false"))
+        (Settings::debugFileOpt, "File where debugging logs are written when --debug is enabled (instead of stderr).",
+            cxxopts::value<std::string>()->default_value(""))
         ("h,help", "Print usage");
     // clang-format on
 

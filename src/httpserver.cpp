@@ -47,7 +47,7 @@ void HttpServer::mhdLogCallback([[maybe_unused]] void* cls, const char* fm,
     static constexpr const size_t max_buf = 512;
     char buf[max_buf];
     vsnprintf(buf, max_buf, fm, ap);
-    LOGE_NOENDL(buf);
+    LOGE(buf);
 }
 
 void HttpServer::makeDaemon() {

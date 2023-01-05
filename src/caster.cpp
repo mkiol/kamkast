@@ -1850,9 +1850,6 @@ void Caster::initAvVideoInputRawFormat() {
 void Caster::initAv() {
     LOGD("av init started");
 
-    av_log_set_level(Logger::match(Logger::LogType::Debug) ? AV_LOG_DEBUG
-                                                           : AV_LOG_QUIET);
-
     if (audioEnabled()) initAvAudio();
 
     if (videoEnabled()) {

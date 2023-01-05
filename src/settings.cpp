@@ -67,6 +67,7 @@ void Settings::loadFromOpts(const cxxopts::ParseResult& options) {
     urlPath = options[urlPathOpt].as<std::string>();
     if (urlPath.empty()) urlPath = randStr();
     debug = options[debugOpt].as<bool>();
+    debugFile = options[debugFileOpt].as<std::string>();
     gui = options[guiOpt].as<bool>();
     address = options[addressOpt].as<std::string>();
     ifname = options[ifnameOpt].as<std::string>();
@@ -126,6 +127,7 @@ void Settings::loadFromFile() {
     if (sec.has(urlPathOpt)) urlPath = sec[urlPathOpt];
     if (urlPath.empty()) urlPath = randStr();
     if (sec.has(debugOpt)) debug = to_bool(sec[debugOpt]);
+    if (sec.has(debugFileOpt)) debugFile = sec[debugFileOpt];
     if (sec.has(guiOpt)) gui = to_bool(sec[guiOpt]);
     if (sec.has(addressOpt)) address = sec[addressOpt];
     if (sec.has(ifnameOpt)) ifname = sec[ifnameOpt];
@@ -208,6 +210,7 @@ void Settings::saveToFile() const {
 
     // sec[guiOpt] = std::to_string(gui);
     // sec[debugOpt] = std::to_string(debug);
+    // sec[debugFileOpt] = debugFile;
 
     mINI::INIFile file{configFile};
     file.generate(ini);

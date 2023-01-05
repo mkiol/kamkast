@@ -34,6 +34,7 @@ struct Settings {
     static constexpr const char* configFileOpt = "config-file";
     static constexpr const char* urlPathOpt = "url-path";
     static constexpr const char* debugOpt = "debug";
+    static constexpr const char* debugFileOpt = "debug-file";
     static constexpr const char* guiOpt = "gui";
     static constexpr const char* addressOpt = "address";
     static constexpr const char* ifnameOpt = "ifname";
@@ -57,6 +58,7 @@ struct Settings {
     static constexpr const std::array offValues = {"off", "0", "disable",
                                                    "disabled"};
     bool debug = false;
+    std::string debugFile;
     bool gui = false;
     bool ignoreUrlParams = false;
     bool disableWebUi = false;
