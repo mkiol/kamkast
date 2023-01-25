@@ -81,7 +81,7 @@ class LipstickRecorderSource {
     std::optional<WlBufferWrapper> m_buf;
     std::thread m_wlThread;
     Transform m_transform = Transform::Normal;
-    bool m_termination = false;
+    bool m_terminating = false;
 
     void clean();
     void recordFrame();

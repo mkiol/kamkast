@@ -1,4 +1,4 @@
-/* Copyright (C) 2022 Michal Kosciesza <michal@mkiol.net>
+/* Copyright (C) 2022-2023 Michal Kosciesza <michal@mkiol.net>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,16 +7,15 @@
 
 #include "lipstickrecordersource.hpp"
 
-#include <errno.h>
 #include <fcntl.h>
 #include <fmt/format.h>
 #include <grp.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include <cerrno>
 #include <chrono>
-#include <tuple>
+#include <cstdlib>
 
 #include "logger.hpp"
 
@@ -75,7 +74,7 @@ void LipstickRecorderSource::clean() {
 
 LipstickRecorderSource::~LipstickRecorderSource() {
     LOGD("lipstick-recorder termination started");
-    m_termination = true;
+    m_terminating = true;
     if (m_wlThread.joinable()) m_wlThread.join();
     LOGD("wl tread joined");
     clean();
@@ -84,7 +83,10 @@ LipstickRecorderSource::~LipstickRecorderSource() {
 
 bool LipstickRecorderSource::supported() noexcept {
     try {
-        if (!checkCredentials()) return false;
+        if (!checkCredentials()) {
+            LOGW("no permission to use lipstick-recorder");
+            return false;
+        }
         makeGlobals(nullptr);
     } catch (const std::runtime_error &e) {
         LOGE(e.what());
@@ -211,7 +213,7 @@ void LipstickRecorderSource::repaintIfNeeded(std::chrono::microseconds maxDur) {
 }
 
 void LipstickRecorderSource::start() {
-    if (m_termination) return;
+    if (m_terminating) return;
 
     LOGD("starting lipstick-recorder");
 
@@ -229,7 +231,7 @@ void LipstickRecorderSource::start() {
             static_cast<int>(1000000.0 / m_globals.props.framerate)};
         const auto repaintDur = sleepDur * 5;
 
-        while (!m_termination) {
+        while (!m_terminating) {
             if (wl_display_roundtrip(m_globals.display) == -1) break;
             LOGT("lr iteration");
 
@@ -242,8 +244,8 @@ void LipstickRecorderSource::start() {
             std::this_thread::sleep_for(sleepDur);
         }
 
-        if (!m_termination) {
-            m_termination = true;
+        if (!m_terminating) {
+            m_terminating = true;
             auto err = wl_display_get_error(m_globals.display);
             LOGE(fmt::format("wl error: {} ({})", strerror(err), err));
             if (m_errorHandler) m_errorHandler();

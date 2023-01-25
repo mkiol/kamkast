@@ -30,6 +30,7 @@ class DataBuffer {
     bool pushExact(const BufType *data, size_t dataSize);
     void pushExactForce(const BufType *data, size_t dataSize);
     size_t push(const BufType *data, size_t dataMaxSize);
+    bool pushOverwriteTail(const BufType *data, size_t size);
     bool pushNullExact(size_t dataSize);
     bool pushNullExactForce(size_t dataSize);
     size_t pull(BufType *data, size_t dataMaxSize);

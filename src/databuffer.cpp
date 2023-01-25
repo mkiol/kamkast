@@ -63,6 +63,14 @@ size_t DataBuffer::push(const BufType *data, size_t dataMaxSize) {
     return sizeToPush;
 }
 
+bool DataBuffer::pushOverwriteTail(const BufType *data, size_t size) {
+    if (freeSpaceSize() < size) return false;
+
+    memcpy(&m_buf[m_tail - size], data, size);
+
+    return true;
+}
+
 bool DataBuffer::pushNullExactForce(size_t dataSize) {
     if (!hasFreeSpace(dataSize)) resize(dataSize);
 

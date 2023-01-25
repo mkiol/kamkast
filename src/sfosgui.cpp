@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2022 Michal Kosciesza <michal@mkiol.net>
+﻿/* Copyright (C) 2022-2023 Michal Kosciesza <michal@mkiol.net>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -161,6 +161,9 @@ void SfosGui::initGui() {
                                 APP_LICENSE_URL);
     context->setContextProperty(QStringLiteral("APP_LICENSE_SPDX"),
                                 APP_LICENSE_SPDX);
+    context->setContextProperty(QStringLiteral("APP_TRANSLATORS_STR"),
+                                APP_TRANSLATORS_STR);
+    context->setContextProperty(QStringLiteral("APP_LIBS_STR"), APP_LIBS_STR);
     context->setContextProperty(QStringLiteral("gui"), this);
 
     view->setSource(SailfishApp::pathTo(QStringLiteral("qml/main.qml")));

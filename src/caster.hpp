@@ -1,4 +1,4 @@
-/* Copyright (C) 2022 Michal Kosciesza <michal@mkiol.net>
+/* Copyright (C) 2022-2023 Michal Kosciesza <michal@mkiol.net>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,10 +7,6 @@
 
 #ifndef CASTER_H
 #define CASTER_H
-
-#ifdef USE_DROIDCAM
-#include <gst/gst.h>
-#endif
 
 #ifdef USE_V4L2
 #include <linux/videodev2.h>
@@ -23,6 +19,7 @@
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libavcodec/bsf.h>
 #include <libavfilter/avfilter.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
@@ -53,10 +50,21 @@ extern "C" {
 #ifdef USE_LIPSTICK_RECORDER
 #include "lipstickrecordersource.hpp"
 #endif
+#ifdef USE_DROIDCAM
+#include "droidcamsource.hpp"
+#include "orientationmonitor.hpp"
+#endif
 
 class Caster {
    public:
-    enum class State { Initing, Inited, Starting, Started, Terminating };
+    enum class State {
+        Initing,
+        Inited,
+        Starting,
+        Started,
+        Paused,
+        Terminating
+    };
     friend std::ostream &operator<<(std::ostream &os, State state);
 
     enum class VideoOrientation {
@@ -80,8 +88,10 @@ class Caster {
     enum class VideoEncoder { Auto, X264, Nvenc, V4l2 };
     friend std::ostream &operator<<(std::ostream &os, VideoEncoder encoder);
 
-    using DataReadyHandler = std::function<size_t(uint8_t *, size_t)>;
+    using DataReadyHandler = std::function<size_t(const uint8_t *, size_t)>;
     using StateChangedHandler = std::function<void(State state)>;
+    using AudioSourceNameChangedHandler =
+        std::function<void(const std::string &name)>;
 
     struct Dim {
         uint32_t width = 0;
@@ -109,6 +119,8 @@ class Caster {
         std::string streamAuthor{"Caster"};
         std::string streamTitle{"Cast session"};
         VideoEncoder videoEncoder = VideoEncoder::Auto;
+        bool useNiceFormats =
+            true; /*force output pixel format to nice one (yuv420p)*/
         friend std::ostream &operator<<(std::ostream &os, const Config &config);
     };
 
@@ -122,19 +134,23 @@ class Caster {
         std::string friendlyName;
     };
 
-    explicit Caster(Config config, DataReadyHandler dataReadyHandler = {},
-                    StateChangedHandler stateChangedHandler = {});
+    explicit Caster(
+        Config config, DataReadyHandler dataReadyHandler = {},
+        StateChangedHandler stateChangedHandler = {},
+        AudioSourceNameChangedHandler audioSourceNameChangedHandler = {});
     ~Caster();
 
     static std::vector<VideoSourceProps> videoSources();
     static std::vector<AudioSourceProps> audioSources();
 
-    void start();
+    void start(bool startPaused = false);
+    void pause();
+    void resume();
     inline State state() const { return m_state; }
     inline auto terminating() const { return state() == State::Terminating; }
     inline const Config &config() const { return m_config; }
     SensorDirection videoDirection() const;
-    void switchVideoDirection();
+    void setAudioVolume(float volume);
     inline void setStateChangedHandler(StateChangedHandler cb) {
         m_stateChangedHandler = std::move(cb);
     }
@@ -148,6 +164,7 @@ class Caster {
         Unknown,
         V4l2,
         DroidCam,
+        DroidCamRaw,
         X11Capture,
         LipstickCapture,
         Test
@@ -166,6 +183,12 @@ class Caster {
         Off,
         Scale,
         Vflip,
+        Hflip,
+        VflipHflip,
+        TransClock,
+        TransClockFlip,
+        TransCclock,
+        TransCclockFlip,
         Frame169,
         Frame169Rot90,
         Frame169Rot180,
@@ -180,13 +203,6 @@ class Caster {
     enum class VideoScale { Off, Down25, Down50, Down75 };
     friend std::ostream &operator<<(std::ostream &os, VideoScale scale);
 
-#ifdef USE_DROIDCAM
-    struct GstPipeline {
-        GstElement *pipeline = nullptr;
-        GstElement *source = nullptr;
-        GstElement *sink = nullptr;
-    };
-#endif
     struct FrameSpec {
         Dim dim;
         std::set<uint32_t, std::greater<uint32_t>> framerates;
@@ -283,28 +299,18 @@ class Caster {
 
     static constexpr const unsigned int m_videoBufSize = 0x100000;
     static constexpr const unsigned int m_audioBufSize = 0x100000;
-#ifdef USE_DROIDCAM
-    static constexpr const GstClockTime m_gsPipelineTickTime =
-        400000000;  // nano s
-#endif
     static constexpr const uint64_t m_avMaxAnalyzeDuration =
         5000000;  // micro s
-    static constexpr const int64_t m_avProbeSize = 500000;
+    static constexpr const int64_t m_avProbeSize = 5000;
     static const int m_maxIters = 100;
 
     /* pix fmts supported by most players */
-    static constexpr const std::array nicePixfmts = {
-        AV_PIX_FMT_NV12,
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUYV422,
-    };
-
-    // yuv420p
+    static constexpr const std::array nicePixfmts = {AV_PIX_FMT_YUV420P};
 
     Config m_config;
     DataReadyHandler m_dataReadyHandler;
     StateChangedHandler m_stateChangedHandler;
+    AudioSourceNameChangedHandler m_audioSourceNameChangedHandler;
     DataBuffer m_videoBuf{m_videoBufSize, m_videoBufSize * 100};
     DataBuffer m_audioBuf{m_audioBufSize, m_audioBufSize * 100};
     std::mutex m_videoMtx;
@@ -323,9 +329,11 @@ class Caster {
     AVCodecContext *m_outVideoCtx = nullptr;
     SwrContext *m_audioSwrCtx = nullptr;
     SwsContext *m_videoSwsCtx = nullptr;
+    AVBSFContext *m_videoBsfExtractExtraCtx = nullptr;
+    AVBSFContext *m_videoBsfDumpExtraCtx = nullptr;
+    std::vector<uint8_t> m_pktSideData;
     std::unordered_map<VideoTrans, FilterCtx> m_videoFilterCtxMap;
     uint8_t *m_videoSwsBuf = nullptr;
-    AVPacket *m_keyVideoPkt = nullptr;
     AVPacket *m_keyAudioPkt = nullptr;
     AVFrame *m_audioFrameIn = nullptr;
     AVFrame *m_audioFrameOut = nullptr;
@@ -342,8 +350,6 @@ class Caster {
     int m_videoRawFrameSize = 0;
     int64_t m_nextVideoPts = 0;
     int64_t m_nextAudioPts = 0;
-    bool m_restartRequested = false;
-    bool m_restarting = false;
     int64_t m_videoTimeLastFrame = 0;       // micro s
     int64_t m_audioTimeLastFrame = 0;       // micro s
     int64_t m_videoFrameDuration = 0;       // micro s
@@ -365,8 +371,8 @@ class Caster {
     std::vector<V4l2H264EncoderProps> m_v4l2Encoders;
 #endif
 #ifdef USE_DROIDCAM
-    std::thread m_gstThread;
-    GstPipeline m_gstPipe;
+    std::optional<DroidCamSource> m_droidCamSource;
+    std::optional<OrientationMonitor> m_orientationMonitor;
 #endif
 #ifdef USE_LIPSTICK_RECORDER
     std::optional<LipstickRecorderSource> m_lipstickRecorder;
@@ -419,7 +425,6 @@ class Caster {
         }
     }
 
-    void restartVideoCapture();
     int avReadPacketCallback(uint8_t *buf, int bufSize);
     int avWritePacketCallback(uint8_t *buf, int bufSize);
     void paStreamRequestCallback(pa_stream *stream, size_t nbytes);
@@ -433,6 +438,7 @@ class Caster {
                                        pa_subscription_event_type_t t,
                                        uint32_t idx, void *userdata);
     static void paStateCallback(pa_context *ctx, void *userdata);
+    std::string paCorrectedClientName(uint32_t idx) const;
     void doPaTask();
     void initAvAudio();
     void initAvAudioDecoder();
@@ -441,18 +447,27 @@ class Caster {
     void initAvVideoForGst();
     void initAvVideoEncoder();
     void initAvVideoInputRawFormat();
+    void initAvVideoInputCompressedFormat();
     void initAvVideoEncoder(VideoEncoder type);
     void initAvVideoRawDecoder();
     void initAvVideoRawDecoderFromInputStream(int idx);
     void initAvVideoFilters();
-    void initAvVideoFiltersFrame169();
-    void initAvVideoFilter(VideoTrans trans, const std::string &fmt);
+    // void initAvVideoFiltersLipstickRecorder();
+    void initAvVideoFiltersFrame169(SensorDirection direction);
+    void initAvVideoFiltersFrame169Vflip(SensorDirection direction);
+    void initAvVideoFilter(SensorDirection direction, VideoTrans trans,
+                           const std::string &fmt);
     void initAvVideoFilter(FilterCtx &ctx, const char *arg);
-    void initAvVideoOutStream();
+    void initAvVideoOutStreamFromEncoder();
+    void initAvVideoOutStreamFromInputFormat();
+    void initAvVideoBsf();
+    void allocAvOutputFormat();
+    void initAvOutputFormat();
+    void reinitAvOutputFormat();
+    void initVideoTrans();
     void initAv();
     void initPa();
-    void startAvVideoForGst();
-    void startAvAudio();
+    void initAvAudioOutStream();
     int findAvVideoInputStreamIdx();
     void startAv();
     void startPa();
@@ -470,6 +485,7 @@ class Caster {
     bool readRawAudioPkt(AVPacket *pkt, int64_t now);
     void clean();
     void cleanAv();
+    void cleanAvOutputFormat();
     void cleanPa();
     static void cleanAvOpts(AVDictionary **opts);
     void setVideoStreamRotation(VideoOrientation requestedOrientation);
@@ -486,6 +502,7 @@ class Caster {
     static AudioPropsMap detectAudioSources();
     void initAvAudioDurations();
     bool readVideoFrameFromBuf(AVPacket *pkt);
+    void readNullFrame(AVPacket *pkt);
     void readVideoFrameFromDemuxer(AVPacket *pkt);
     bool encodeVideoFrame(AVPacket *pkt);
     bool filterVideoFrame(VideoTrans trans, AVFrame *frameIn,
@@ -504,51 +521,43 @@ class Caster {
     static std::pair<std::reference_wrapper<const VideoFormatExt>,
                      AVPixelFormat>
     bestVideoFormat(const AVCodec *encoder,
-                    const VideoSourceInternalProps &props);
+                    const VideoSourceInternalProps &props, bool useNiceFormats);
     static AVSampleFormat bestAudioSampleFormat(
         const AVCodec *encoder, const AudioSourceInternalProps &props);
     static void setVideoEncoderOpts(VideoEncoder encoder, AVDictionary **opts);
     static void setAudioEncoderOpts(AudioEncoder encoder, AVDictionary **opts);
     static std::string videoEncoderAvName(VideoEncoder encoder);
     static std::string audioEncoderAvName(AudioEncoder encoder);
-    static std::string videoSourceAvName(VideoSourceType type);
+    static std::string videoFormatAvName(VideoSourceType type);
     static std::string streamFormatAvName(StreamFormat format);
     std::optional<std::reference_wrapper<PaSinkInput>> bestPaSinkInput();
     void mutePaSinkInput(PaSinkInput &si);
     void unmutePaSinkInput(PaSinkInput &si);
     void unmuteAllPaSinkInputs();
-    void setState(State newState);
+    void setState(State newState, bool notify = true);
     static VideoPropsMap detectTestVideoSources();
-    void rawDataReadyCallback(const uint8_t *data, size_t size);
+    void rawVideoDataReadyHandler(const uint8_t *data, size_t size);
+    void compressedVideoDataReadyHandler(const uint8_t *data, size_t size);
     static Dim computeTransDim(Dim dim, VideoTrans trans, VideoScale scale);
     static uint32_t hash(std::string_view str);
     static bool nicePixfmt(AVPixelFormat fmt);
-    static AVPixelFormat fixPixfmt(AVPixelFormat fmt,
-                                   const AVPixelFormat *supportedFmts);
+    static AVPixelFormat toNicePixfmt(AVPixelFormat fmt,
+                                      const AVPixelFormat *supportedFmts);
+    static bool videoPktOk(const AVPacket *pkt);
+    void extractVideoExtradataFromCompressedDemuxer();
+    void extractVideoExtradataFromRawDemuxer();
+    void extractVideoExtradataFromRawBuf();
+    bool extractExtradata(AVPacket *pkt);
+    bool insertExtradata(AVPacket *pkt) const;
+    static int orientationToRot(VideoOrientation orientation);
+    static VideoTrans orientationToTrans(VideoOrientation orientation,
+                                         const VideoSourceInternalProps &props);
+    static VideoTrans transForYinverted(VideoTrans trans, bool yinverted);
 #ifdef USE_X11CAPTURE
     static VideoPropsMap detectX11VideoSources();
 #endif
 #ifdef USE_DROIDCAM
-    static GstFlowReturn gstNewSampleCallbackStatic(GstElement *element,
-                                                    gpointer udata);
-    GstFlowReturn gstNewSampleCallback(GstElement *element);
-    GHashTable *getDroidCamDevTable() const;
-    void doGstIteration();
-    void initGst();
-    void startGst();
-    void cleanGst();
-    void restartGst();
-    void startGstThread();
-    static int droidCamProp(GstElement *source, const char *name);
-    static bool setDroidCamProp(GstElement *source, const char *name,
-                                int value);
-    static VideoPropsMap detectDroidCamProps(GstElement *source);
-    static void initGstLib();
     static VideoPropsMap detectDroidCamVideoSources();
-    void startDroidCamCapture() const;
-    void stopDroidCamCapture() const;
-    std::optional<std::string> readDroidCamDevParam(
-        const std::string &key) const;
 #endif
 #ifdef USE_V4L2
     static VideoPropsMap detectV4l2VideoSources();
