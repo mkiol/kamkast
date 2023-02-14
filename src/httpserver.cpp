@@ -85,7 +85,7 @@ void HttpServer::makeDaemonUsingIfname() {
     else if (!addr6.empty())
         makeDaemonUsingAddress(addr6);
     else
-        throw std::runtime_error("invalid interface name");
+        throw InvalidIfnameError{};
 }
 
 HttpServer::HttpServer(Config config, ConnectionHandler connectionHandler,

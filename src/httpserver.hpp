@@ -1,4 +1,4 @@
-/* Copyright (C) 2022 Michal Kosciesza <michal@mkiol.net>
+/* Copyright (C) 2022-2023 Michal Kosciesza <michal@mkiol.net>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,12 @@
 
 class HttpServer {
    public:
+    struct InvalidIfnameError : public std::runtime_error {
+        InvalidIfnameError() : std::runtime_error{"invalid interface name"} {}
+        InvalidIfnameError(const InvalidIfnameError&) = delete;
+        InvalidIfnameError& operator=(const InvalidIfnameError&) = delete;
+    };
+
     using ConnectionId = unsigned int;
     using Header = std::pair<std::string, std::string>;
     using ConnectionHandler =
@@ -42,7 +48,7 @@ class HttpServer {
         std::string address;
     };
 
-    inline static std::string anyAddress = "0.0.0.0";
+    inline static const std::string anyAddress = "0.0.0.0";
     inline static const size_t connectionBufSize = 0x1000000;
     inline static const size_t connectionBlockSize = 0x1000000;
 
