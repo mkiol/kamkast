@@ -133,13 +133,13 @@ Page {
 
             Slider {
                 width: parent.width
-                minimumValue: 0
+                minimumValue: -10
                 maximumValue: 10
-                stepSize: 0.1
+                stepSize: 1
                 handleVisible: true
                 value: gui.audioVolume
                 valueText: value
-                label: qsTr("Audio volume")
+                label: qsTr("Audio volume boost")
 
                 onValueChanged: {
                     gui.audioVolume = value

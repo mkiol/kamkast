@@ -32,6 +32,7 @@ function init2(info) {
     const videoOrientationSelect = document.getElementById('video-orientation-select');
     const audioSelect = document.getElementById('audio-select');
     const audioVolumeInput = document.getElementById('audio-volume-input');
+    const audioSourceMutedInput = document.getElementById('audio-source-muted-input');
     const playButton = document.getElementById('play-button');
     const stopButton = document.getElementById('stop-button');
     const video = document.getElementById('video');
@@ -50,6 +51,7 @@ function init2(info) {
     videoOrientationSelect.value = info.default_video_orientation;
     audioSelect.value = info.default_audio_source ? info.default_audio_source : 'off';
     audioVolumeInput.value = info.default_audio_volume;
+    audioSourceMutedInput.checked = info.default_audio_source_muted;
     header.innerHTML = info.server_name + ' (version: ' + info.server_version + ')';
 
     streamFormatSelect.addEventListener('change', () => update());
@@ -57,6 +59,7 @@ function init2(info) {
     videoOrientationSelect.addEventListener('change', () => update());
     audioSelect.addEventListener('change', () => update());
     audioVolumeInput.addEventListener('change', () => update());
+    audioSourceMutedInput.addEventListener('change', () => update());
     playButton.addEventListener('click', () => play());
     stopButton.addEventListener('click', () => stop());
     video.addEventListener('pause', () => stop());
@@ -81,13 +84,15 @@ function setStreamUrl() {
     const videoOrientationSelect = document.getElementById('video-orientation-select');
     const audioSelect = document.getElementById('audio-select');
     const audioVolumeInput = document.getElementById('audio-volume-input');
+    const audioSourceMutedInput = document.getElementById('audio-source-muted-input');
 
     streamUrl = baseUrl() + '/stream' +
         '?stream-format=' + streamFormatSelect.value +
         '&video-source=' + videoSelect.value +
         '&video-orientation=' + videoOrientationSelect.value +
         '&audio-source=' + audioSelect.value +
-        '&audio-volume=' + audioVolumeInput.value;
+        '&audio-volume=' + audioVolumeInput.value +
+        '&audio-source-muted=' + audioSourceMutedInput.checked;
 
     url.innerHTML = streamUrl;
     url.href = streamUrl;
@@ -181,10 +186,15 @@ fieldset { margin: 10px 0 10px 0; }
 </div>
 
 <div class='input'>
-<label for='audio-volume-input'>Audio volume:</label>
-<input type='range' name='audio-volume' id='audio-volume-input' min='0' max='10'
-       step='0.1' oninput='audioVolumeVal.innerText = this.value'>
-<span id='audioVolumeVal'></span>
+<label for='audio-volume-input'>Audio volume boost:</label>
+<input type='range' name='audio-volume' id='audio-volume-input' min='-10' max='10'
+       step='1' oninput='audioVolumeVal.innerText = this.value'>
+<span id='audioVolumeVal'></span><span>dB</span>
+</div>
+
+<div class='input'>
+<label for='audio-source-muted'>Audio source muted:</label>
+<input type='checkbox' id='audio-source-muted-input' name='audio-source-muted'>
 </div>
 </fieldset>
 

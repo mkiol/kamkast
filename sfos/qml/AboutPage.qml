@@ -81,7 +81,7 @@ Page {
 
             PaddedLabel {
                 horizontalAlignment: Text.AlignLeft
-                text: "GNU Libmicrohttpd · FFmpeg · LAME · x264 · {fmt} · mINI · cxxopts"
+                text: APP_LIBS_STR
             }
 
             Spacer{}

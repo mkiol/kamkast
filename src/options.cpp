@@ -31,8 +31,10 @@ Options::Options(int argc, char** argv) : m_options{APP_NAME, APP_DESC} {
             cxxopts::value<std::string>()->default_value(""))
         (DEFAULT_OPT(Settings::videoOrientationOpt), "Set the default video orientation. Supported orientations: auto, landscape, inverted-landscape, portrait, inverted-portrait",
             cxxopts::value<std::string>()->default_value("auto"))
-        (DEFAULT_OPT(Settings::audioVolumeOpt), "Set the default audio volume. Valid values are in a range 0.0-10.0. Value 0 mutes the audio. Value 1 means volume is not changed.",
-            cxxopts::value<float>()->default_value("1.0"))
+        (DEFAULT_OPT(Settings::audioVolumeOpt), "Set the default audio volume boost. Valid values are in a range from -10dB to 10dB. Value 0 means volume is not changed.",
+            cxxopts::value<int>()->default_value("0"))
+        (DEFAULT_OPT(Settings::audioSourceMutedOpt), "Audio source is muted when streaming starts. This make sense only for playback capture.",
+            cxxopts::value<bool>()->default_value("false"))
         (Settings::ignoreUrlParamsOpt, "URL parameters in a request are ignored. Only default options are used.",
             cxxopts::value<bool>()->default_value("false"))
         ("list-sources", "Show all video and audio sources detected.")

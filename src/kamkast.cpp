@@ -190,6 +190,9 @@ void Kamkast::startCaster(HttpServer::ConnectionId connId,
             return Caster::VideoOrientation::Auto;
         }();
 
+        if (settings.audioSourceMuted)
+            config.options |= Caster::OptionsFlags::MuteAudioSource;
+
         if (audioOnlyFormat(config.streamFormat) &&
             !config.videoSource.empty()) {
             LOGW(
@@ -197,6 +200,16 @@ void Kamkast::startCaster(HttpServer::ConnectionId connId,
                 "source");
             config.videoSource.clear();
         }
+
+        if (!config.videoSource.empty())
+            config.options |=
+                Caster::OptionsFlags::V4l2VideoSources |
+                Caster::OptionsFlags::DroidCamRawVideoSources |
+                Caster::OptionsFlags::X11CaptureVideoSources |
+                Caster::OptionsFlags::LipstickCaptureVideoSources |
+                Caster::OptionsFlags::OnlyNiceVideoFormats;
+        if (!config.audioSource.empty())
+            config.options |= Caster::OptionsFlags::AllPaAudioSources;
 
         m_caster.emplace(
             config,
@@ -323,8 +336,13 @@ int Kamkast::handleCtrlRequest(
         return 404;
     }
 
-    auto videoSources = Caster::videoSources();
-    auto audioSources = Caster::audioSources();
+    auto videoSources =
+        Caster::videoSources(Caster::OptionsFlags::V4l2VideoSources |
+                             Caster::OptionsFlags::DroidCamRawVideoSources |
+                             Caster::OptionsFlags::X11CaptureVideoSources |
+                             Caster::OptionsFlags::LipstickCaptureVideoSources);
+    auto audioSources =
+        Caster::audioSources(Caster::OptionsFlags::AllPaAudioSources);
 
     std::ostringstream os;
 
@@ -358,7 +376,9 @@ int Kamkast::handleCtrlRequest(
        << "\",\"default_video_orientation\":\""
        << m_settings.videoOrientationToStr()
        << "\",\"default_stream_format\":\"" << m_settings.streamFormatToStr()
-       << "\",\"default_audio_volume\":\"" << m_settings.audioVolume << "\"}";
+       << "\",\"default_audio_volume\":\"" << m_settings.audioVolume
+       << "\",\"default_audio_source_muted\":"
+       << (m_settings.audioSourceMuted ? "true" : "false") << "}";
 
     responseHeaders.emplace_back("Content-Type", "application/json");
 
@@ -424,11 +444,16 @@ void Kamkast::stopServer() {
 }
 
 std::string Kamkast::videoSourcesTable() {
-    return sourcesTable(Caster::videoSources());
+    return sourcesTable(Caster::videoSources(
+        Caster::OptionsFlags::V4l2VideoSources |
+        Caster::OptionsFlags::DroidCamRawVideoSources |
+        Caster::OptionsFlags::X11CaptureVideoSources |
+        Caster::OptionsFlags::LipstickCaptureVideoSources));
 }
 
 std::string Kamkast::audioSourcesTable() {
-    return sourcesTable(Caster::audioSources());
+    return sourcesTable(
+        Caster::audioSources(Caster::OptionsFlags::AllPaAudioSources));
 }
 
 std::pair<std::string, std::string> Kamkast::sourcesTable() {

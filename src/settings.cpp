@@ -80,7 +80,8 @@ void Settings::loadFromOpts(const cxxopts::ParseResult& options) {
         options[DEFAULT_OPT(videoSourceNameOpt)].as<std::string>();
     audioSourceName =
         options[DEFAULT_OPT(audioSourceNameOpt)].as<std::string>();
-    audioVolume = options[DEFAULT_OPT(audioVolumeOpt)].as<float>();
+    audioVolume = options[DEFAULT_OPT(audioVolumeOpt)].as<int>();
+    audioSourceMuted = options[DEFAULT_OPT(audioSourceMutedOpt)].as<bool>();
     videoOrientation = videoOrientationFromStr(
         trimmed(options[DEFAULT_OPT(videoOrientationOpt)].as<std::string>()));
     ignoreUrlParams = options[ignoreUrlParamsOpt].as<bool>();
@@ -106,32 +107,16 @@ void Settings::loadFromFile() {
         return;
     }
 
-    auto to_bool = [](const auto& str) { return str == "1" || str == "true"; };
-    auto to_int = [](const auto& str) {
-        try {
-            return std::stoi(str);
-        } catch (...) {
-            return 0;
-        }
-    };
-    auto to_float = [](const auto& str) {
-        try {
-            return std::stof(str);
-        } catch (...) {
-            return 1.F;
-        }
-    };
-
     auto& sec = ini[sectionName];
 
     if (sec.has(urlPathOpt)) urlPath = sec[urlPathOpt];
     if (urlPath.empty()) urlPath = randStr();
-    if (sec.has(debugOpt)) debug = to_bool(sec[debugOpt]);
+    if (sec.has(debugOpt)) debug = toBool(sec[debugOpt]);
     if (sec.has(debugFileOpt)) debugFile = sec[debugFileOpt];
-    if (sec.has(guiOpt)) gui = to_bool(sec[guiOpt]);
+    if (sec.has(guiOpt)) gui = toBool(sec[guiOpt]);
     if (sec.has(addressOpt)) address = sec[addressOpt];
     if (sec.has(ifnameOpt)) ifname = sec[ifnameOpt];
-    if (sec.has(portOpt)) port = to_int(sec[portOpt]);
+    if (sec.has(portOpt)) port = toInt(sec[portOpt]);
     if (sec.has(videoEncoderOpt))
         videoEncoder = videoEncoderFromStr(sec[videoEncoderOpt]);
     if (sec.has(DEFAULT_OPT(streamFormatOpt)))
@@ -141,16 +126,18 @@ void Settings::loadFromFile() {
     if (sec.has(DEFAULT_OPT(audioSourceNameOpt)))
         audioSourceName = sec[DEFAULT_OPT(audioSourceNameOpt)];
     if (sec.has(DEFAULT_OPT(audioVolumeOpt)))
-        audioVolume = to_float(sec[DEFAULT_OPT(audioVolumeOpt)]);
+        audioVolume = toInt(sec[DEFAULT_OPT(audioVolumeOpt)]);
+    if (sec.has(DEFAULT_OPT(audioSourceMutedOpt)))
+        audioSourceMuted = toBool(sec[DEFAULT_OPT(audioSourceMutedOpt)]);
     if (sec.has(DEFAULT_OPT(videoOrientationOpt)))
         videoOrientation =
             videoOrientationFromStr(sec[DEFAULT_OPT(videoOrientationOpt)]);
     if (sec.has(ignoreUrlParamsOpt))
-        ignoreUrlParams = to_bool(sec[ignoreUrlParamsOpt]);
-    if (sec.has(disableWebUiOpt)) disableWebUi = to_bool(sec[disableWebUiOpt]);
+        ignoreUrlParams = toBool(sec[ignoreUrlParamsOpt]);
+    if (sec.has(disableWebUiOpt)) disableWebUi = toBool(sec[disableWebUiOpt]);
     if (sec.has(disableCtrlApiOpt))
-        disableCtrlApi = to_bool(sec[disableCtrlApiOpt]);
-    if (sec.has(logRequestsOpt)) logRequests = to_bool(sec[logRequestsOpt]);
+        disableCtrlApi = toBool(sec[disableCtrlApiOpt]);
+    if (sec.has(logRequestsOpt)) logRequests = toBool(sec[logRequestsOpt]);
     if (sec.has(logFileOpt)) logFile = sec[logFileOpt];
 }
 
@@ -201,6 +188,7 @@ void Settings::saveToFile() const {
     sec[DEFAULT_OPT(videoSourceNameOpt)] = videoSourceName;
     sec[DEFAULT_OPT(audioSourceNameOpt)] = audioSourceName;
     sec[DEFAULT_OPT(audioVolumeOpt)] = std::to_string(audioVolume);
+    sec[DEFAULT_OPT(audioSourceMutedOpt)] = std::to_string(audioSourceMuted);
     sec[DEFAULT_OPT(videoOrientationOpt)] = videoOrientationToStr();
     sec[ignoreUrlParamsOpt] = std::to_string(ignoreUrlParams);
     sec[disableWebUiOpt] = std::to_string(disableWebUi);
@@ -216,14 +204,6 @@ void Settings::saveToFile() const {
     file.generate(ini);
 }
 
-static std::optional<float> strToFloat(std::string_view value) {
-    std::stringstream ss;
-    ss << value;
-    float fvalue;
-    if (ss >> fvalue) return fvalue;
-    return std::nullopt;
-}
-
 void Settings::updateFromStr(std::string_view opt, std::string_view value) {
     auto invalidValue = [](auto opt, auto value) {
         LOGW("invalid '" << opt << "' param: " << value);
@@ -236,11 +216,13 @@ void Settings::updateFromStr(std::string_view opt, std::string_view value) {
         else
             audioSourceName = value;
     } else if (opt == audioVolumeOpt) {
-        if (auto fvalue = strToFloat(value);
-            fvalue && *fvalue >= 0 && *fvalue <= 100)
-            audioVolume = *fvalue;
+        if (auto ivalue = toInt(std::string{value});
+            ivalue >= -10 && ivalue <= 10)
+            audioVolume = ivalue;
         else
             invalidValue(opt, value);
+    } else if (opt == audioSourceMutedOpt) {
+        audioSourceMuted = toBool(std::string{value});
     } else if (opt == videoSourceNameOpt) {
         if (std::find(offValues.cbegin(), offValues.cend(), value) !=
             offValues.cend())
@@ -336,3 +318,24 @@ std::optional<Settings::VideoEncoder> Settings::videoEncoderFromStr(
     if (str == "x264") return VideoEncoder::X264;
     return std::nullopt;
 }
+
+int Settings::toInt(const std::string& str) {
+    try {
+        return std::stoi(str);
+    } catch (...) {
+        LOGW("invalid int value: " << str);
+        return 0;
+    }
+};
+
+bool Settings::toBool(const std::string& str) {
+    if (std::find(onValues.cbegin(), onValues.cend(), str) != onValues.cend())
+        return true;
+
+    if (std::find(offValues.cbegin(), offValues.cend(), str) !=
+        offValues.cend())
+        return false;
+
+    LOGW("invalid bool value: " << str);
+    return false;
+};

@@ -50,13 +50,16 @@ struct Settings {
     static constexpr const char* disableCtrlApiOpt = "disable-ctrl-api";
     static constexpr const char* logRequestsOpt = "log-requests";
     static constexpr const char* logFileOpt = "log-file";
+    static constexpr const char* audioSourceMutedOpt = "audio-source-muted";
 
     static constexpr const std::array urlOpts = {
-        streamFormatOpt, videoSourceNameOpt, audioSourceNameOpt, audioVolumeOpt,
-        videoOrientationOpt};
+        streamFormatOpt, videoSourceNameOpt,  audioSourceNameOpt,
+        audioVolumeOpt,  audioSourceMutedOpt, videoOrientationOpt};
 
-    static constexpr const std::array offValues = {"off", "0", "disable",
-                                                   "disabled"};
+    static constexpr const std::array offValues = {
+        "false", "no", "off", "0", "disable", "disabled"};
+    static constexpr const std::array onValues = {"true", "yes",    "on",
+                                                  "1",    "enable", "enabled"};
     bool debug = false;
     std::string debugFile;
     bool gui = false;
@@ -64,8 +67,9 @@ struct Settings {
     bool disableWebUi = false;
     bool disableCtrlApi = false;
     bool logRequests = false;
+    bool audioSourceMuted = false;
     int64_t port = 0;
-    float audioVolume = 1.0;
+    int audioVolume = 0;
     std::string urlPath;
     std::string ifname;
     std::string address;
@@ -93,6 +97,8 @@ struct Settings {
     void loadFromFile();
     void loadFromOpts(const cxxopts::ParseResult& options);
     void check();
+    static int toInt(const std::string& str);
+    static bool toBool(const std::string& str);
 };
 
 #endif // SETTINGS_H
