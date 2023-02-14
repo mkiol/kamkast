@@ -24,10 +24,14 @@
 
 SfosGui::SfosGui(int argc, char **argv, Event::Handler eventHandler,
                  Settings &settings)
-    : m_eventHandler{std::move(eventHandler)},
-      m_settings{settings},
-      m_videoSources{Caster::videoSources()},
-      m_audioSources{Caster::audioSources()},
+    : m_eventHandler{std::move(eventHandler)}, m_settings{settings},
+      m_videoSources{Caster::videoSources(
+          Caster::OptionsFlags::V4l2VideoSources |
+          Caster::OptionsFlags::DroidCamRawVideoSources |
+          Caster::OptionsFlags::X11CaptureVideoSources |
+          Caster::OptionsFlags::LipstickCaptureVideoSources)},
+      m_audioSources{
+          Caster::audioSources(Caster::OptionsFlags::AllPaAudioSources)},
       m_ifnames{makeIfnames()} {
     initQtLogger();
 
@@ -192,7 +196,7 @@ void SfosGui::setPort(int value) {
     }
 }
 
-float SfosGui::getAudioVolume() const { return m_settings.audioVolume; }
+int SfosGui::getAudioVolume() const { return m_settings.audioVolume; }
 void SfosGui::setAudioVolume(float value) {
     auto v = static_cast<decltype(m_settings.audioVolume)>(value);
     if (v != m_settings.audioVolume) {
