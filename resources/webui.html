@@ -42,9 +42,9 @@ function init2(info) {
     info.audio_sources.push(disabledDev);
 
     info.video_sources.forEach(
-        videoSource => videoSelect.options.add(new Option(videoSource.friendly_name + ' (' + videoSource.name + ')', videoSource.name)));
+        videoSource => videoSelect.options.add(new Option(videoSource.friendly_name + ' / ' + videoSource.name, videoSource.name)));
     info.audio_sources.forEach(
-        audioSource => audioSelect.options.add(new Option(audioSource.friendly_name + ' (' + audioSource.name + ')', audioSource.name)));
+        audioSource => audioSelect.options.add(new Option(audioSource.friendly_name + ' / ' + audioSource.name, audioSource.name)));
 
     streamFormatSelect.value = info.default_stream_format;
     videoSelect.value = info.default_video_source ? info.default_video_source : 'off';
