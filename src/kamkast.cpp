@@ -276,6 +276,7 @@ void Kamkast::stopCaster() {
     if (m_caster) {
         if (m_castingConnId) m_server->dropConnection(*m_castingConnId);
         m_caster.reset();
+        enqueueEvent(Event::Type::CasterEnded);
     }
 }
 
@@ -364,8 +365,15 @@ int Kamkast::handleCtrlRequest(
         return name;
     };
 
+#ifdef USE_SFOS
+    static const auto* platform = "sfos";
+#else
+    static const auto* platform = "generic";
+#endif
+
     os << "{\"server_name\":\"" << APP_NAME << "\",\"server_version\":\""
-       << APP_VERSION << "\",\"video_sources\":[";
+       << APP_VERSION << "\",\"platform\":\"" << platform
+       << "\",\"video_sources\":[";
     dev2js(videoSources);
     os << "],\"audio_sources\":[";
     dev2js(audioSources);
