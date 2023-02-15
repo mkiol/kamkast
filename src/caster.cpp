@@ -3652,7 +3652,7 @@ bool Caster::readAudioPktFromBuf(AVPacket *pkt, bool nullWhenNoEnoughData) {
         const auto pushNull = m_paStream == nullptr || nullWhenNoEnoughData;
 
         if (pushNull) {
-            LOGD("audio push null: "
+            LOGT("audio push null: "
                  << (m_audioInFrameSize - m_audioBuf.size()));
             m_audioBuf.pushNullExactForce(m_audioInFrameSize -
                                           m_audioBuf.size());
