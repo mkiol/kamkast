@@ -46,10 +46,16 @@ SfosGui::SfosGui(int argc, char **argv, Event::Handler eventHandler,
                     m_eventHandler(std::move(event));
                 } catch (const HttpServer::InvalidIfnameError &e) {
                     LOGE("invalid interface exception: " << e.what());
-                    m_settings.ifname.clear();
-                    m_settings.saveToFile();
-                    LOGE("please restart the application");
-                    shutdown();
+                    if (m_settings.ifname.empty()) {
+                        shutdown();
+                    } else {
+                        LOGD(
+                            "starting server with default interface "
+                            "configuration");
+                        m_settings.ifname.clear();
+                        m_settings.saveToFile();
+                        enqueue(Event::Type::StartServer);
+                    }
                 } catch (const std::exception &e) {
                     LOGE("unexpected exception: " << e.what());
                     shutdown();
