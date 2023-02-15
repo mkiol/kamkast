@@ -42,7 +42,7 @@ cd kamkast
 mkdir build
 cd build
 
-cmake ../
+cmake ../ -DCMAKE_BUILD_TYPE=Release
 make
 ```
 
@@ -57,9 +57,9 @@ cd kamkast
 mkdir build
 cd build
 
-sfdk config --session specfile=../../sfos/harbour-kamkast.spec
+sfdk config --session specfile=../sfos/harbour-kamkast.spec
 sfdk config --session target=SailfishOS-4.4.0.58-aarch64
-sfdk cmake ../../ -Dwith_v4l2=0 -Dwith_droidcam=1 -Dwith_sfos=1 -Dwith_sfos_screen_capture=1
+sfdk cmake ../ -DCMAKE_BUILD_TYPE=Release -Dwith_sfos=ON -Dwith_sfos_screen_capture=ON
 sfdk package
 ```
 
@@ -74,7 +74,7 @@ cd kamkast
 mkdir build
 cd build
 
-cmake ../ -Dwith_nvenc=0
+cmake ../ -DCMAKE_BUILD_TYPE=Release -Dwith_nvenc=0
 make
 ```
 
