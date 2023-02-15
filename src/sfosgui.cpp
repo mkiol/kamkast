@@ -209,11 +209,21 @@ void SfosGui::setPort(int value) {
 }
 
 int SfosGui::getAudioVolume() const { return m_settings.audioVolume; }
-void SfosGui::setAudioVolume(float value) {
-    auto v = static_cast<decltype(m_settings.audioVolume)>(value);
-    if (v != m_settings.audioVolume) {
+void SfosGui::setAudioVolume(int value) {
+    if (value != m_settings.audioVolume) {
         auto s = m_settings;
-        s.audioVolume = v;
+        s.audioVolume = value;
+        updateSettings(std::move(s));
+    }
+}
+
+bool SfosGui::getAudioSourceMuted() const {
+    return m_settings.audioSourceMuted;
+}
+void SfosGui::setAudioSourceMuted(bool value) {
+    if (value != m_settings.audioSourceMuted) {
+        auto s = m_settings;
+        s.audioSourceMuted = value;
         updateSettings(std::move(s));
     }
 }

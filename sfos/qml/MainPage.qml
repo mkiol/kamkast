@@ -104,20 +104,7 @@ Page {
             }
 
             ComboBox {
-                label: qsTr("Audio source")
-                currentIndex: gui.audioSourceIdx
-                menu: ContextMenu {
-                    Repeater {
-                        model: gui.getAudioSources()
-                        MenuItem { text: modelData }
-                    }
-                }
-                onCurrentIndexChanged: {
-                    gui.audioSourceIdx = currentIndex
-                }
-            }
-
-            ComboBox {
+                enabled: gui.videoSourceIdx !== 0
                 label: qsTr("Video orientation")
                 currentIndex: gui.videoOrientationIdx
                 menu: ContextMenu {
@@ -131,7 +118,34 @@ Page {
                 }
             }
 
+            ComboBox {
+                label: qsTr("Audio source")
+                currentIndex: gui.audioSourceIdx
+                menu: ContextMenu {
+                    Repeater {
+                        model: gui.getAudioSources()
+                        MenuItem { text: modelData }
+                    }
+                }
+                onCurrentIndexChanged: {
+                    gui.audioSourceIdx = currentIndex
+                }
+            }
+
+            TextSwitch {
+                enabled: gui.audioSourceIdx === 2
+                automaticCheck: false
+                checked: gui.audioSourceMuted
+                text: qsTr("Audio source muted")
+
+                onClicked: {
+                    gui.audioSourceMuted = !gui.audioSourceMuted
+                }
+            }
+
             Slider {
+                enabled: gui.audioSourceIdx !== 0
+                opacity: enabled ? 1.0 : Theme.opacityLow
                 width: parent.width
                 minimumValue: -10
                 maximumValue: 10

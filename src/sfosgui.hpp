@@ -35,6 +35,8 @@ class SfosGui : public QObject {
         int ifnameIdx READ getIfnameIdx WRITE setIfnameIdx NOTIFY configChanged)
     Q_PROPERTY(int audioVolume READ getAudioVolume WRITE setAudioVolume NOTIFY
                    configChanged)
+    Q_PROPERTY(bool audioSourceMuted READ getAudioSourceMuted WRITE
+                   setAudioSourceMuted NOTIFY configChanged)
     Q_PROPERTY(int videoSourceIdx READ getVideoSourceIdx WRITE setVideoSourceIdx
                    NOTIFY configChanged)
     Q_PROPERTY(int audioSourceIdx READ getAudioSourceIdx WRITE setAudioSourceIdx
@@ -117,7 +119,9 @@ class SfosGui : public QObject {
     int getPort() const;
     void setPort(int value);
     int getAudioVolume() const;
-    void setAudioVolume(float value);
+    void setAudioVolume(int value);
+    bool getAudioSourceMuted() const;
+    void setAudioSourceMuted(bool value);
     int getVideoSourceIdx() const;
     void setVideoSourceIdx(int value);
     int getAudioSourceIdx() const;
