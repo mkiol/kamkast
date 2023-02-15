@@ -4,7 +4,7 @@ Name: harbour-kamkast
 # << macros
 
 Summary:    Kamkast
-Version:    1.0.0
+Version:    1.1.0
 Release:    1
 Group:      Application
 License:    LICENSE
@@ -17,6 +17,7 @@ BuildRequires:  libasan-static
 BuildRequires:  libubsan-static
 BuildRequires:  desktop-file-utils
 BuildRequires:  pkgconfig(libpulse)
+BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(gstreamer-1.0)
 BuildRequires:  pkgconfig(gstreamer-app-1.0)
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
