@@ -202,12 +202,10 @@ void Kamkast::startCaster(HttpServer::ConnectionId connId,
         }
 
         if (!config.videoSource.empty())
-            config.options |=
-                Caster::OptionsFlags::V4l2VideoSources |
-                Caster::OptionsFlags::DroidCamRawVideoSources |
-                Caster::OptionsFlags::X11CaptureVideoSources |
-                Caster::OptionsFlags::LipstickCaptureVideoSources |
-                Caster::OptionsFlags::OnlyNiceVideoFormats;
+            config.options |= Caster::OptionsFlags::V4l2VideoSources |
+                              Caster::OptionsFlags::DroidCamRawVideoSources |
+                              Caster::OptionsFlags::X11CaptureVideoSources |
+                              Caster::OptionsFlags::LipstickCaptureVideoSources;
         if (!config.audioSource.empty())
             config.options |= Caster::OptionsFlags::AllPaAudioSources;
 
