@@ -4515,15 +4515,17 @@ static auto v4l2Caps(uint32_t caps) {
     if (caps & V4L2_CAP_MODULATOR) os << "V4L2_CAP_MODULATOR, ";
     if (caps & V4L2_CAP_SDR_CAPTURE) os << "V4L2_CAP_SDR_CAPTURE, ";
     if (caps & V4L2_CAP_EXT_PIX_FORMAT) os << "V4L2_CAP_EXT_PIX_FORMAT, ";
-    if (caps & V4L2_CAP_SDR_OUTPUT) os << "V4L2_CAP_SDR_OUTPUT, ";
-    if (caps & V4L2_CAP_META_CAPTURE) os << "V4L2_CAP_META_CAPTURE, ";
     if (caps & V4L2_CAP_READWRITE) os << "V4L2_CAP_READWRITE, ";
     if (caps & V4L2_CAP_ASYNCIO) os << "V4L2_CAP_ASYNCIO, ";
     if (caps & V4L2_CAP_STREAMING) os << "V4L2_CAP_STREAMING, ";
+    if (caps & V4L2_CAP_DEVICE_CAPS) os << "V4L2_CAP_DEVICE_CAPS, ";
+#ifdef USE_V4L2M2M
     if (caps & V4L2_CAP_META_OUTPUT) os << "V4L2_CAP_META_OUTPUT, ";
     if (caps & V4L2_CAP_TOUCH) os << "V4L2_CAP_TOUCH, ";
     if (caps & V4L2_CAP_IO_MC) os << "V4L2_CAP_IO_MC, ";
-    if (caps & V4L2_CAP_DEVICE_CAPS) os << "V4L2_CAP_DEVICE_CAPS, ";
+    if (caps & V4L2_CAP_SDR_OUTPUT) os << "V4L2_CAP_SDR_OUTPUT, ";
+    if (caps & V4L2_CAP_META_CAPTURE) os << "V4L2_CAP_META_CAPTURE, ";
+#endif
     return os.str();
 }
 

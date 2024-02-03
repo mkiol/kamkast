@@ -35,11 +35,11 @@ if(with_sfos_screen_capture)
 endif()
 
 if(with_v4l2m2m)
-    set(with_v4l2m2m ON)
+    set(with_v4l2 ON)
 endif()
 
 if(with_sfos)
-    set(with_v4l2 OFF)
+    #set(with_v4l2 OFF)
     set(with_v4l2m2m OFF)
     set(with_x11_screen_capture OFF)
     set(with_nvenc OFF)
@@ -188,7 +188,7 @@ endif()
 target_compile_definitions(compiler_flags INTERFACE "$<$<BOOL:${with_trace_logs}>:USE_TRACE_LOGS>")
 target_compile_definitions(compiler_flags INTERFACE "$<$<BOOL:${with_droidcam}>:USE_DROIDCAM>")
 target_compile_definitions(compiler_flags INTERFACE "$<$<BOOL:${with_v4l2}>:USE_V4L2>")
-target_compile_definitions(compiler_flags INTERFACE "$<$<BOOL:${with_v4l2m2m}>:USE_V4L2>")
+target_compile_definitions(compiler_flags INTERFACE "$<$<BOOL:${with_v4l2m2m}>:USE_V4L2M2M>")
 target_compile_definitions(compiler_flags INTERFACE "$<$<BOOL:${with_x11_screen_capture}>:USE_X11CAPTURE>")
 target_compile_definitions(compiler_flags INTERFACE "$<$<BOOL:${with_sfos}>:USE_SFOS>")
 target_compile_definitions(compiler_flags INTERFACE "$<$<BOOL:${with_sfos_screen_capture}>:USE_LIPSTICK_RECORDER>")
@@ -571,7 +571,7 @@ if(build_nasm)
         INSTALL_DIR ${PROJECT_BINARY_DIR}/external
         URL "${nasm_source_url}"
         URL_MD5 "${nasm_checksum}"
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
+        CONFIGURE_COMMAND cp -a <SOURCE_DIR>/. <BINARY_DIR> && <BINARY_DIR>/configure --prefix=<INSTALL_DIR>
         BUILD_COMMAND ${MAKE}
         BUILD_ALWAYS False
         INSTALL_COMMAND make DESTDIR=/ install)
